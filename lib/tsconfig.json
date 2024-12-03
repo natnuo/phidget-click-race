@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "CommonJS",
+    "declaration": true,
+    "declarationMap": true,         
+    "rootDir": ".",
+    "composite": true,
+    "strict": true,
+    "moduleResolution": "node"
+  }
+}
