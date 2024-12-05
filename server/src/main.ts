@@ -86,8 +86,10 @@ io.on("connection", (socket) => {
 
   ONLINE_USERS.add(user);
   
-  socket.emit("red", redClicks, getCPS(redClickHist));
-  socket.emit("green", greenClicks, getCPS(greenClickHist));
+  socket.emit("redClick", redClicks);
+  socket.emit("greenClick", greenClicks);
+  socket.emit("redCPS", getCPS(redClickHist));
+  socket.emit("greenCPS", getCPS(greenClickHist));
 
   //////////////////////////
   // POST-INTITIALIZATION //
@@ -96,9 +98,11 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => { ONLINE_USERS.delete(user); });  
   socket.on("click", (color: Color) => {
     if (color === "red") {
-      io.emit("red", ++redClicks, getCPS(redClickHist));
+      io.emit("redClick", ++redClicks);
+      socket.emit("redCPS", getCPS(redClickHist));  // socket to maintain only impactful transmission
     } else {
-      io.emit("green", ++greenClicks, getCPS(greenClickHist));
+      io.emit("greenClick", ++greenClicks);
+      socket.emit("greenCPS", getCPS(greenClickHist));
     }
   });
 });
@@ -107,8 +111,8 @@ io.on("connection", (socket) => {
 setInterval(() => {
   redClickHist = [...redClickHist, redClicks].slice(1);
   greenClickHist = [...greenClickHist, greenClicks].slice(1);
-  io.emit("red", redClicks, getCPS(redClickHist));
-  io.emit("green", greenClicks, getCPS(greenClickHist));
+  io.emit("redCPS", getCPS(redClickHist));
+  io.emit("greenCPS", getCPS(greenClickHist));
 }, CPS_UPD_INTERVAL_MS);
 
 server.listen(PORT, () => {
