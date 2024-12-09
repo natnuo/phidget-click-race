@@ -4,6 +4,23 @@
 @tailwind components;
 @tailwind utilities;
 
-.e-pop-cont {
-        
+:root {
+  --POP_SYMBOL_SHOW_TIME_MS: 1000ms;
+}
+
+@keyframes clickpop {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.e-pop-obj {
+  opacity: 0;
+  animation: clickpop var(--POP_SYMBOL_SHOW_TIME_MS);
 }

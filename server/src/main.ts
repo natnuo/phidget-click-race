@@ -47,7 +47,7 @@ const CPS_UPD_INTERVAL_MS = 100;
 /////////////////////////////
 let ONLINE_USERS: Set<User> = new Set();
 
-let redClicks = 1, greenClicks = 1;
+let redClicks = 0, greenClicks = 0;
 
 const DNE = -1;
 const CLICK_HIST_SIZE = 10;
@@ -86,10 +86,7 @@ io.on("connection", (socket) => {
 
   ONLINE_USERS.add(user);
   
-  socket.emit("redClick", redClicks);
-  socket.emit("greenClick", greenClicks);
-  socket.emit("redCPS", getCPS(redClickHist));
-  socket.emit("greenCPS", getCPS(greenClickHist));
+  socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist));
 
   //////////////////////////
   // POST-INTITIALIZATION //
