@@ -14,6 +14,10 @@ const POP_POSITION_MARGIN_FACTOR = 0.3;
 
 const TW_TEXT_FILTERS = `${styles["opacity-50"]}`;
 const TW_CENTER = `${styles["flex"]} ${styles["justify-center"]} ${styles["items-center"]}`;
+const TW_MAJOR_CONT = `${styles["w-svw"]} ${styles["h-svh"]} ${styles["fixed"]}
+  ${styles["flex"]} ${styles["md:flex-row"]} ${styles["flex-col"]}
+  ${styles["-rotate-12"]} ${styles["md:rotate-12"]}
+`;
 
 // TODO: MOBILE COMPATIBILITY
 const App = () => {
@@ -111,64 +115,84 @@ const App = () => {
   }, [socket, onRedClick, onGreenClick, setRedCPS, setGreenCPS, onInitialState]);
 
   return (
-    <div
-      className={`
-        ${styles["w-svw"]} ${styles["h-svh"]}
-        ${styles["flex"]} ${styles["md:flex-row"]} ${styles["flex-col"]}
-        ${styles["overflow-clip"]}
-      `}
-    >
-      <div
-        className={`
-          ${styles["transition-all"]} ${styles["duration-50"]} ${styles["cursor-pointer"]}
-          ${TW_CENTER} ${styles["relative"]}
-        `}
-        style={{ backgroundColor: RED, flex: `${getRedSizeFactor() * 100}%` }}
-        onClick={clickRed}
-      >
-        <div className={
-          `${styles["w-full"]} ${styles["h-full"]} ${styles["absolute"]} ${styles["pointer-events-none"]}`
-        } ref={redPopCont}></div>
-        
-        <Animated
-          animationIn="fadeInUp" animationOut="fadeOutDown" animationOutDuration={0} isVisible={!LOADING}
-          className={`${TW_CENTER} ${styles["flex-col"]} ${styles["select-none"]}`}
-        >
-          <span
-            className={
-              `${styles["font-bold"]}
-              ${styles["text-7xl"]} ${styles["sm:text-8xl"]} ${styles["md:text-9xl"]}
-              ${TW_TEXT_FILTERS}`
-            }
-          >{redClicks}</span>
-          <span className={`${styles["text-lg"]} ${styles["sm:text-xl"]} ${TW_TEXT_FILTERS}`}>{redCPS.toPrecision(2)} cps</span>
-        </Animated>
+    <div className={`
+      ${styles["w-svw"]} ${styles["h-svh"]}
+      ${styles["overflow-clip"]}
+    `}>
+      <div className={`${TW_MAJOR_CONT}`}>
+        <div
+          className={`
+            ${styles["transition-all"]} ${styles["duration-50"]}
+            ${TW_CENTER} ${styles["origin-bottom"]} ${styles["md:origin-right"]} ${styles["scale-150"]}
+          `}
+          style={{ backgroundColor: RED, flex: `${getRedSizeFactor() * 100}%` }}
+        ></div>
+        <div
+          className={
+            `${TW_CENTER} ${styles["origin-top"]} ${styles["md:origin-left"]} ${styles["scale-150"]}`
+          }
+          style={{ backgroundColor: GREEN, flex: `${(1 - getRedSizeFactor()) * 100}%` }}
+        ></div>
       </div>
-      <div
-        className={
-          `${styles["cursor-pointer"]}
-          ${TW_CENTER} ${styles["flex-col"]} ${styles["relative"]}`
-        }
-        style={{ backgroundColor: GREEN, flex: `${(1 - getRedSizeFactor()) * 100}%` }}
-        onClick={clickGreen}
-      >
-        <div className={
-          `${styles["w-full"]} ${styles["h-full"]} ${styles["absolute"]} ${styles["pointer-events-none"]} ${styles["e-pop-cont"]}`
-        } ref={greenPopCont}></div>
-
-        <Animated
-          animationIn="fadeInUp" animationOut="fadeOutDown" animationOutDuration={0} isVisible={!LOADING}
-          className={`${TW_CENTER} ${styles["flex-col"]} ${styles["select-none"]}`}
+      <div className={`${TW_MAJOR_CONT}`}>
+        <div
+          className={`
+            ${styles["transition-all"]} ${styles["duration-50"]} ${styles["cursor-pointer"]}
+            ${TW_CENTER} ${styles["relative"]}
+          `}
+          style={{ backgroundColor: RED, flex: `${getRedSizeFactor() * 100}%` }}
+          onClick={clickRed}
         >
-          <span
-            className={
-              `${styles["font-bold"]}
-              ${styles["text-7xl"]} ${styles["sm:text-8xl"]} ${styles["md:text-9xl"]}
-              ${TW_TEXT_FILTERS}`
-            }
-          >{greenClicks}</span>
-          <span className={`${styles["text-lg"]} ${styles["sm:text-xl"]} ${TW_TEXT_FILTERS}`}>{greenCPS.toPrecision(2)} cps</span>
-        </Animated>
+          <div className={
+            `${styles["w-full"]} ${styles["h-full"]} ${styles["absolute"]} ${styles["pointer-events-none"]}`
+          } ref={redPopCont}></div>
+          
+          <Animated
+            animationIn="fadeInUp" animationOut="fadeOutDown" animationOutDuration={0} isVisible={!LOADING}
+            className={`${styles["select-none"]}`}
+          >
+            <div className={`${styles["md:-rotate-12"]} ${styles["rotate-12"]} ${styles["translate-y-1/4"]} ${TW_CENTER} ${styles["flex-col"]}`}>
+              <span
+                className={
+                  `${styles["font-bold"]}
+                  ${styles["text-7xl"]} ${styles["sm:text-8xl"]} ${styles["md:text-9xl"]}
+                  ${TW_TEXT_FILTERS}`
+                }
+              >{redClicks}</span>
+              <span className={`${styles["text-lg"]} ${styles["sm:text-xl"]} ${TW_TEXT_FILTERS}`}>{redCPS.toPrecision(2)} cps</span>
+            </div>
+          </Animated>
+        </div>
+        <div
+          className={
+            `${styles["cursor-pointer"]}
+            ${TW_CENTER} ${styles["flex-col"]} ${styles["relative"]}`
+          }
+          style={{ backgroundColor: GREEN, flex: `${(1 - getRedSizeFactor()) * 100}%` }}
+          onClick={clickGreen}
+        >
+          <div className={
+            `${styles["w-full"]} ${styles["h-full"]} ${styles["absolute"]} ${styles["pointer-events-none"]} ${styles["e-pop-cont"]}`
+          } ref={greenPopCont}></div>
+
+          <Animated
+            animationIn="fadeInUp" animationOut="fadeOutDown" animationOutDuration={0} isVisible={!LOADING}
+            className={`${styles["select-none"]}`}
+          >
+            <div className={`${styles["md:-rotate-12"]} ${styles["rotate-12"]} ${styles["-translate-y-1/4"]} ${TW_CENTER} ${styles["flex-col"]}`}>
+              <span
+                className={
+                  `${styles["font-bold"]}
+                  ${styles["text-7xl"]} ${styles["sm:text-8xl"]} ${styles["md:text-9xl"]}
+                  ${TW_TEXT_FILTERS}`
+                }
+              >{greenClicks}</span>
+              <span className={`
+                ${styles["text-lg"]} ${styles["sm:text-xl"]} ${TW_TEXT_FILTERS}
+              `}>{greenCPS.toPrecision(2)} cps</span>
+            </div>
+          </Animated>
+        </div>
       </div>
     </div>
   );
