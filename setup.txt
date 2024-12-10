@@ -1,0 +1,46 @@
+sudo apt update
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install nodejs -y
+sudo apt install npm -y
+sudo setcap cap_net_bind_service=+ep `which node`
+
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+sudo certbot certonly --standalone
+
+sudo addgroup nodecert
+sudo adduser ubuntu nodecert
+sudo adduser root nodecert
+
+sudo chgrp -R nodecert /etc/letsencrypt/live
+sudo chgrp -R nodecert /etc/letsencrypt/archive
+
+sudo chmod -R 750 /etc/letsencrypt/live
+sudo chmod -R 750 /etc/letsencrypt/archive
+
+# NOW WRITE ENV. VARS. INTO /etc/app.env, THEN
+
+# NOW WRITE SERVICE TO /etc/systemd/system/myapp.service
+e.g.
+[Unit]
+Description=Node.js App
+After=network.target multi-user.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/badavas-secure
+ExecStart=/usr/bin/npm start
+Restart=always
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/badavas/app.env
+SyslogIdentifier=badavas
+
+[Install]
+WantedBy=multi-user.target
+
+sudo bash build.bash
+
+sudo systemctl daemon-reload &&
+sudo systemctl enable myapp.service &&
+sudo systemctl start myapp.service &&
+sudo journalctl -fu myapp.service
