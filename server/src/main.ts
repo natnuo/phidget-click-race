@@ -79,29 +79,33 @@ const log = (action: Loggable) => {
 // SOCKET LISTENERS AND EMITTERS //
 ///////////////////////////////////
 io.on("connection", (socket) => {
-  assert(typeof socket.handshake.query.user === "string");
+  const rawuser = socket.handshake.headers.user;
+  assert(typeof rawuser === "string");
   
-  const user = JSON.parse(socket.handshake.query.user);
+  const user = JSON.parse(rawuser);
   assert(isUser(user));
 
   ONLINE_USERS.add(user);
   
-  socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist));
+  if (user.type === "reciever")
+    socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist));
 
   //////////////////////////
   // POST-INTITIALIZATION //
   //////////////////////////
 
   socket.on("disconnect", () => { ONLINE_USERS.delete(user); });  
-  socket.on("click", (color: Color) => {
-    if (color === "red") {
-      io.emit("redClick", ++redClicks);
-      socket.emit("redCPS", getCPS(redClickHist));  // socket to maintain only impactful transmission
-    } else {
-      io.emit("greenClick", ++greenClicks);
-      socket.emit("greenCPS", getCPS(greenClickHist));
-    }
-  });
+  if (user.type === "clicker") {
+    socket.on("click", (color: Color) => {
+      if (color === "red") {
+        io.emit("redClick", ++redClicks);
+        socket.emit("redCPS", getCPS(redClickHist));  // socket to maintain only impactful transmission
+      } else {
+        io.emit("greenClick", ++greenClicks);
+        socket.emit("greenCPS", getCPS(greenClickHist));
+      }
+    });
+  }
 });
 
 // update click history for cps calc
