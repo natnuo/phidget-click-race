@@ -19,7 +19,6 @@ const TW_MAJOR_CONT = `${styles["w-svw"]} ${styles["h-svh"]} ${styles["fixed"]}
   ${styles["-rotate-12"]} ${styles["md:rotate-12"]}
 `;
 
-// TODO: MOBILE COMPATIBILITY
 const App = () => {
   const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
   const [LOADING, setLoading] = useState(true);
@@ -27,7 +26,7 @@ const App = () => {
   const socket = useMemo(() => {
     return io(
       `ws://${window.location.hostname}${__PRODUCTION__.current ? "" : ":3001"}`,
-      { query: { user: JSON.stringify({ username: "", email: "" }) } }
+      { extraHeaders: { user: JSON.stringify({ username: "", email: "", type: "reciever" }) } }
     );
   }, [__PRODUCTION__]);
 
