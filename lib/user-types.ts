@@ -1,7 +1,7 @@
 export interface User {
   username: string;
   email: string;
-  type: "clicker" | "reciever";
+  type: "clicker" | "reciever" | "cliciever";
 }
 
 export const isUser = (obj: unknown): obj is User => {
@@ -9,6 +9,6 @@ export const isUser = (obj: unknown): obj is User => {
   return (
     typeof _uobj?.username === "string" &&
     typeof _uobj?.email === "string" &&
-    (_uobj?.type === "clicker" || _uobj?.type === "reciever")
+    (_uobj?.type === "clicker" || _uobj?.type === "reciever" || _uobj?.type === "cliciever")
   );
 };

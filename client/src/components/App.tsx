@@ -23,10 +23,11 @@ const App = () => {
   const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
   const [LOADING, setLoading] = useState(true);
 
+  ///////// SOCKET INIT
   const socket = useMemo(() => {
     return io(
       `ws://${window.location.hostname}${__PRODUCTION__.current ? "" : ":3001"}`,
-      { extraHeaders: { user: JSON.stringify({ username: "", email: "", type: "reciever" }) } }
+      { extraHeaders: { user: JSON.stringify({ username: "", email: "", type: "cliciever" }) } }
     );
   }, [__PRODUCTION__]);
 

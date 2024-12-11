@@ -87,7 +87,7 @@ io.on("connection", (socket) => {
 
   ONLINE_USERS.add(user);
   
-  if (user.type === "reciever")
+  if (user.type === "reciever" || user.type === "cliciever")
     socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist));
 
   //////////////////////////
@@ -95,7 +95,7 @@ io.on("connection", (socket) => {
   //////////////////////////
 
   socket.on("disconnect", () => { ONLINE_USERS.delete(user); });  
-  if (user.type === "clicker") {
+  if (user.type === "clicker" || user.type === "cliciever") {  // always true, but including line so don't forget this check in the future
     socket.on("click", (color: Color) => {
       if (color === "red") {
         io.emit("redClick", ++redClicks);
