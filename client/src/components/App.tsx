@@ -9,8 +9,6 @@ const GREEN = "#00ff00";
 // const NEUTRAL = "#ffffff";
 
 const POP_POSITION_MARGIN_FACTOR = 0.3;
-// const POP_SYMBOL_SHOW_TIME_MS = 1000;  // must match equivalent variable in index.module.css
-// const POP_SYMBOL_ATTEMPT_ELEMENT_CLEAR_TIME_INTERVAL_MS = 10000; const _PSAECTI = POP_SYMBOL_ATTEMPT_ELEMENT_CLEAR_TIME_INTERVAL_MS;
 
 const TW_TEXT_FILTERS = `${styles["opacity-50"]}`;
 const TW_CENTER = `${styles["flex"]} ${styles["justify-center"]} ${styles["items-center"]}`;
@@ -18,12 +16,20 @@ const TW_MAJOR_CONT = `${styles["w-svw"]} ${styles["h-svh"]} ${styles["fixed"]}
   ${styles["flex"]} ${styles["md:flex-row"]} ${styles["flex-col"]}
   ${styles["-rotate-12"]} ${styles["md:rotate-12"]}
 `;
+const TW_SETTINGS_CONT = `${styles["flex"]} ${styles["items-center"]} ${styles["gap-4"]}`;
+
+type GameMode = "None" | "First to Target" | "Most in Time" | "Neverending";
+type ClickColor = "r" | "g";
+
+export const sleep = async (ms: number) => { await new Promise(resolve => setTimeout(resolve, ms)); };
 
 const App = () => {
   const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
   const [LOADING, setLoading] = useState(true);
 
-  ///////// SOCKET INIT
+  /////////////////
+  // SOCKET INIT //
+  /////////////////
   const socket = useMemo(() => {
     return io(
       `ws://${window.location.hostname}${__PRODUCTION__.current ? "" : ":3001"}`,
@@ -31,11 +37,23 @@ const App = () => {
     );
   }, [__PRODUCTION__]);
 
-  ///////// POPPING CLICKS
+  ////////////////////////
+  // SETTINGS VARIABLES //
+  ////////////////////////
+  const [tempGameMode, setTempGameMode] = useState<GameMode>("None");
+  const [gameMode, setGameMode] = useState<GameMode>("None");
+  const [tempTimer, setTempTimer] = useState(30);
+  const [tempTarget, setTempTarget] = useState(100);
+  const [timer, setTimer] = useState(30);
+  const [target, setTarget] = useState(100);
+
+  ////////////////////
+  // POPPING CLICKS //
+  ////////////////////
   const greenPopCont = useRef<HTMLDivElement>(null);
   const redPopCont = useRef<HTMLDivElement>(null);
 
-  const showClickSymbol = useCallback((color: "r" | "g") => {
+  const showClickSymbol = useCallback((color: ClickColor) => {
     const tgtRef = color === "g" ? greenPopCont : redPopCont;
 
     if (!tgtRef.current) return;
@@ -65,24 +83,37 @@ const App = () => {
     );
   }, []);
 
-  ////////////////////////////
-  // CLICK AND CPS UPDATERS //
-  ////////////////////////////
+  /////////////////////////////
+  // CLICK AND CPS VARIABLES //
+  /////////////////////////////
   const [redClicks, setRedClicks] = useState(0);
   const [greenClicks, setGreenClicks] = useState(0);
   const [redCPS, setRedCPS] = useState(0);
   const [greenCPS, setGreenCPS] = useState(0);
+
+  //////////////////////////////
+  // GAME PHASE UPDATER [END] //
+  //////////////////////////////
+  const end = useCallback((winner: ClickColor | "t") => {
+
+  }, []);
+
+  ////////////////////////////
+  // CLICK AND CPS UPDATERS //
+  ////////////////////////////
 
   const sigmoid = (x: number) => { return 1 / (1 + Math.exp(-x)); }
 
   const onRedClick = useCallback((_redClicks: number) => {
     setRedClicks(_redClicks);
     showClickSymbol("r");
-  }, [showClickSymbol]);
+    if (_redClicks >= target) end("r");
+  }, [showClickSymbol, end, target]);
   const onGreenClick = useCallback((_greenClicks: number) => {
     setGreenClicks(_greenClicks);
     showClickSymbol("g");
-  }, [showClickSymbol]);
+    if (_greenClicks >= target) end("g");
+  }, [showClickSymbol, end, target]);
   const onInitialState = useCallback((_redClicks: number, _greenClicks: number, _redCPS: number, _greenCPS: number) => {
     setRedClicks(_redClicks); setGreenClicks(_greenClicks);
     setRedCPS(_redCPS); setGreenCPS(_greenCPS);
@@ -92,6 +123,39 @@ const App = () => {
   const getRedSizeFactor = useCallback(() => {
     return sigmoid(((redCPS + 1) / (redCPS + greenCPS + 2) - 0.5));
   }, [redCPS, greenCPS]);
+
+  ////////////////////////
+  // SETTINGS MODIFIERS //
+  ////////////////////////
+  const decTimer = useCallback(async () => {
+    await sleep(1000);
+    if (gameMode !== "Most in Time") return;
+    if (timer === 1) {
+      if (redClicks > greenClicks) end("r");
+      else if (redClicks === greenClicks) end("t");
+      else end("g");
+      return;
+    }
+    setTimer(timer - 1);
+    decTimer();
+  }, [timer, gameMode, end, greenClicks, redClicks]);
+
+  const cancelSettings = useCallback(() => {
+    setTempGameMode(gameMode);
+    setTempTimer(timer);
+    setTempTarget(target);
+  }, [gameMode, timer, target]);
+  const newGame = useCallback(() => {
+    setGameMode(tempGameMode);
+    setTimer(tempTimer);
+    setTarget(tempTarget);
+
+    switch (tempGameMode) {  // switch for greater scalability in future
+      case "Most in Time":
+        decTimer();
+        break;
+    }
+  }, [tempGameMode, tempTimer, tempTarget, decTimer]);
 
   /////////////////////
   // SOCKET EMITTERS //
@@ -119,6 +183,92 @@ const App = () => {
       ${styles["w-svw"]} ${styles["h-svh"]}
       ${styles["overflow-clip"]}
     `}>
+      <div>
+        <label
+          htmlFor="settings_modal"
+          className={`${styles["btn"]} ${styles["fixed"]} ${styles["top-5"]} ${styles["right-5"]} ${styles["z-10"]}`}
+        >Settings</label>
+
+        <input type="checkbox" id="settings_modal" className={`${styles["modal-toggle"]}`} />
+        <div className={`${styles["modal"]}`} role="dialog">
+          <div className={`${styles["modal-box"]} ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-2"]}`}>
+            <h3 className={`${styles["text-lg"]} ${styles["font-bold"]}`}>Settings</h3>
+            <select
+              className={`${styles["select"]} ${styles["w-full"]} ${styles["max-w-xs"]}`}
+              onChange={(e) => { setTempGameMode(e.target.value as GameMode); }}
+            >
+              <option disabled selected>Game Mode</option>
+              <option value={"First to Target" as GameMode}>First to Target</option>
+              <option value={"Most in Time" as GameMode}>Most in Time</option>
+              <option value={"Neverending" as GameMode}>Neverending</option>
+            </select>
+
+            <div className={`${styles["flex"]} ${styles["flex-col"]} ${styles["gap-4"]}`}>
+              {
+                tempGameMode === "First to Target"
+                ? (
+                  <div className={`${TW_SETTINGS_CONT}`}>
+                    <span>Target</span>
+                    <input
+                      type="range" min={1} max={500} value={tempTarget} className={`${styles["range"]}`}
+                      onChange={(e) => { setTempTarget(parseInt(e.target.value)); }}
+                    />
+                    <span className={`${styles["text-nowrap"]}`}>{tempTarget} click{tempTarget === 1 ? "" : "s"}</span>
+                  </div>
+                ) : tempGameMode === "Most in Time"
+                ? (
+                  <div className={`${TW_SETTINGS_CONT}`}>
+                    <span>Timer</span>
+                    <input
+                      type="range" min={1} max={100} value={tempTimer} className={`${styles["range"]}`}
+                      onChange={(e) => { setTempTimer(parseInt(e.target.value)); }}
+                    />
+                    <span className={`${styles["text-nowrap"]}`}>{tempTimer} second{tempTimer === 1 ? "" : "s"}</span>
+                  </div>
+                ) : tempGameMode === "Neverending"
+                ? (
+                  <div className={`${TW_SETTINGS_CONT}`}>
+                  </div>
+                ) : null
+              }
+
+              <div className={`${styles["flex"]} ${styles["gap-2"]}`}>
+                {
+                  gameMode !== "None"
+                  ? (
+                    <label
+                      className={`${styles["btn"]} ${styles["flex-1"]} ${styles["btn-primary"]}`}
+                      htmlFor="settings_modal"
+                      onClick={cancelSettings}
+                    >Cancel</label>
+                  ) : null
+                }
+                
+                {
+                  tempGameMode !== "None"
+                  ? (
+                    <label
+                      className={`${styles["btn"]} ${styles["flex-1"]} ${styles["btn-warning"]}`}
+                      htmlFor="settings_modal"
+                      onClick={newGame}
+                    >New Game</label>
+                  ) : null
+                }
+              </div>
+            </div>
+          </div>
+          
+          {
+            gameMode !== "None" ? (
+              <label
+                className={`${styles["modal-backdrop"]}`} htmlFor="settings_modal"
+                onClick={cancelSettings}
+              ></label>
+            ) : null
+          }
+        </div>
+      </div>
+
       <div className={`${TW_MAJOR_CONT}`}>
         <div
           className={`
