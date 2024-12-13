@@ -3,6 +3,7 @@ import styles from "../css/index.module.css";
 import { io } from "socket.io-client";
 import { Animated } from "react-animated-css";
 import { createRoot } from "react-dom/client";
+import { InitSetup } from "../../../lib/game-types";
 
 const RED = "#ff0000";
 const GREEN = "#00ff00";
@@ -17,6 +18,7 @@ const TW_MAJOR_CONT = `${styles["w-svw"]} ${styles["h-svh"]} ${styles["fixed"]}
   ${styles["-rotate-12"]} ${styles["md:rotate-12"]}
 `;
 const TW_SETTINGS_CONT = `${styles["flex"]} ${styles["items-center"]} ${styles["gap-4"]}`;
+const TW_TRANSITIONS = `${styles["transition-all"]} ${styles["duration-50"]}`;
 
 type GameMode = "None" | "First to Target" | "Most in Time" | "Neverending";
 type ClickColor = "r" | "g";
@@ -91,13 +93,6 @@ const App = () => {
   const [redCPS, setRedCPS] = useState(0);
   const [greenCPS, setGreenCPS] = useState(0);
 
-  //////////////////////////////
-  // GAME PHASE UPDATER [END] //
-  //////////////////////////////
-  const end = useCallback((winner: ClickColor | "t") => {
-
-  }, []);
-
   ////////////////////////////
   // CLICK AND CPS UPDATERS //
   ////////////////////////////
@@ -107,16 +102,20 @@ const App = () => {
   const onRedClick = useCallback((_redClicks: number) => {
     setRedClicks(_redClicks);
     showClickSymbol("r");
-    if (_redClicks >= target) end("r");
-  }, [showClickSymbol, end, target]);
+  }, [showClickSymbol]);
   const onGreenClick = useCallback((_greenClicks: number) => {
     setGreenClicks(_greenClicks);
     showClickSymbol("g");
-    if (_greenClicks >= target) end("g");
-  }, [showClickSymbol, end, target]);
-  const onInitialState = useCallback((_redClicks: number, _greenClicks: number, _redCPS: number, _greenCPS: number) => {
+  }, [showClickSymbol]);
+  const onInitialState = useCallback((_redClicks: number, _greenClicks: number, _redCPS: number, _greenCPS: number, gameSetup: InitSetup) => {
+    if (!gameSetup) return;
     setRedClicks(_redClicks); setGreenClicks(_greenClicks);
     setRedCPS(_redCPS); setGreenCPS(_greenCPS);
+    switch (gameSetup.gameMode) {
+      case "Most in Time":
+        setTempTimer(gameSetup.time);
+        break;
+    }
     setLoading(false);
   }, []);
 
@@ -127,35 +126,36 @@ const App = () => {
   ////////////////////////
   // SETTINGS MODIFIERS //
   ////////////////////////
-  const decTimer = useCallback(async () => {
-    await sleep(1000);
-    if (gameMode !== "Most in Time") return;
-    if (timer === 1) {
-      if (redClicks > greenClicks) end("r");
-      else if (redClicks === greenClicks) end("t");
-      else end("g");
-      return;
-    }
-    setTimer(timer - 1);
-    decTimer();
-  }, [timer, gameMode, end, greenClicks, redClicks]);
-
   const cancelSettings = useCallback(() => {
     setTempGameMode(gameMode);
     setTempTimer(timer);
     setTempTarget(target);
   }, [gameMode, timer, target]);
   const newGame = useCallback(() => {
+    if (tempGameMode === "None") return;
+
     setGameMode(tempGameMode);
     setTimer(tempTimer);
     setTarget(tempTarget);
 
     switch (tempGameMode) {  // switch for greater scalability in future
       case "Most in Time":
-        decTimer();
+        socket.emit("init", {
+          gameMode: "Most in Time",
+          time: tempTimer,
+        } as InitSetup);
         break;
     }
-  }, [tempGameMode, tempTimer, tempTarget, decTimer]);
+  }, [tempGameMode, tempTimer, tempTarget, socket]);
+
+  const onEnd = useCallback(() => {
+    setGameMode("None");
+    setTimer(tempTimer);
+    setTarget(tempTarget);
+  }, [tempTimer, tempTarget]);
+  const onTimer = useCallback((t: number) => {
+    setTimer(tempTimer - t)
+  }, [tempTimer]);
 
   /////////////////////
   // SOCKET EMITTERS //
@@ -172,11 +172,13 @@ const App = () => {
     socket.on("redCPS", setRedCPS);
     socket.on("greenCPS", setGreenCPS);
     socket.on("initialState", onInitialState);
+    socket.on("timer", onTimer);
+    socket.on("end", onEnd);
 
     return () => {
       socket.off();
     };
-  }, [socket, onRedClick, onGreenClick, setRedCPS, setGreenCPS, onInitialState]);
+  }, [socket, onRedClick, onGreenClick, setRedCPS, setGreenCPS, onInitialState, onTimer, onEnd]);
 
   return (
     <div className={`
@@ -194,7 +196,7 @@ const App = () => {
           <div className={`${styles["modal-box"]} ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-2"]}`}>
             <h3 className={`${styles["text-lg"]} ${styles["font-bold"]}`}>Settings</h3>
             <select
-              className={`${styles["select"]} ${styles["w-full"]} ${styles["max-w-xs"]}`}
+              className={`${styles["select"]} ${styles["w-full"]} ${styles["max-w-xs"]} ${styles["mb-4"]}`}
               onChange={(e) => { setTempGameMode(e.target.value as GameMode); }}
             >
               <option disabled selected>Game Mode</option>
@@ -269,10 +271,25 @@ const App = () => {
         </div>
       </div>
 
+      {
+        gameMode === "Most in Time"
+        ? (<div className={`
+          ${styles["fixed"]} ${styles["text-4xl"]}
+          ${styles["top-1/2"]}
+          ${styles["-translate-x-1/2"]} ${styles["-translate-y-1/2"]}
+          ${styles["z-20"]} ${styles["bg-neutral"]} ${styles["text-neutral-content"]}
+          ${styles["drop-shadow"]} ${styles["p-4"]} ${styles["rounded"]}
+          ${styles["min-w-20"]} ${TW_TRANSITIONS}
+          ${styles["flex"]} ${styles["justify-center"]}
+        `} style={{ left: `${getRedSizeFactor() * 100}%` }}>
+          {timer}
+        </div>) : null
+      }
+
       <div className={`${TW_MAJOR_CONT}`}>
         <div
           className={`
-            ${styles["transition-all"]} ${styles["duration-50"]}
+            ${TW_TRANSITIONS}
             ${TW_CENTER} ${styles["origin-bottom"]} ${styles["md:origin-right"]} ${styles["scale-150"]}
           `}
           style={{ backgroundColor: RED, flex: `${getRedSizeFactor() * 100}%` }}
@@ -287,7 +304,7 @@ const App = () => {
       <div className={`${TW_MAJOR_CONT}`}>
         <div
           className={`
-            ${styles["transition-all"]} ${styles["duration-50"]} ${styles["cursor-pointer"]}
+            ${TW_TRANSITIONS} ${styles["cursor-pointer"]}
             ${TW_CENTER} ${styles["relative"]}
           `}
           style={{ backgroundColor: RED, flex: `${getRedSizeFactor() * 100}%` }}

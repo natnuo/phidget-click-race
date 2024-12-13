@@ -5,10 +5,11 @@ import path from "node:path";
 import * as fs from "fs";
 import http from "node:http";
 import https from "node:https";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import assert from "node:assert";
 import { isUser, User } from "../../lib/user-types";
 import { Color } from "../../lib/phidget-types";
+import { InitSetup } from "../../lib/game-types";
 
 const __PRODUCTION__ = process.env.PRODUCTION === "Y";
 
@@ -41,18 +42,28 @@ app.get("/", (req, res) => {
 // RESOURCE CONSTS //
 /////////////////////
 const CPS_UPD_INTERVAL_MS = 100;
+const GENERAL_UPDATE_INTERVAL_MS = 100;
 
 /////////////////////////////
 // OPERATIONAL INFORMATION //
 /////////////////////////////
 let ONLINE_USERS: Set<User> = new Set();
 
-let redClicks = 0, greenClicks = 0;
+let redClicks: number, greenClicks: number;
 
 const DNE = -1;
 const CLICK_HIST_SIZE = 10;
-// no queue impl rip
-let redClickHist = Array(CLICK_HIST_SIZE).fill(DNE), greenClickHist = Array(CLICK_HIST_SIZE).fill(DNE);
+let timer: number;
+let redClickHist: number[], greenClickHist: number[];
+
+const initResources = () => {
+  redClicks = 0, greenClicks = 0;
+  redClickHist = Array(CLICK_HIST_SIZE).fill(DNE), greenClickHist = Array(CLICK_HIST_SIZE).fill(DNE);
+  timer = 0;
+};
+initResources();
+
+let gameSetup: InitSetup | undefined = undefined;
 
 //////////////////////
 // HELPER FUNCTIONS //
@@ -78,6 +89,11 @@ const log = (action: Loggable) => {
 ///////////////////////////////////
 // SOCKET LISTENERS AND EMITTERS //
 ///////////////////////////////////
+const initSocket = (user: User, socket: Socket) => {
+  if (user.type === "reciever" || user.type === "cliciever")
+    socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist), gameSetup);
+};
+let itv: NodeJS.Timeout | undefined = undefined;
 io.on("connection", (socket) => {
   const rawuser = socket.handshake.headers.user;
   assert(typeof rawuser === "string");
@@ -87,16 +103,37 @@ io.on("connection", (socket) => {
 
   ONLINE_USERS.add(user);
   
-  if (user.type === "reciever" || user.type === "cliciever")
-    socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist));
+  initSocket(user, socket);
 
   //////////////////////////
   // POST-INTITIALIZATION //
   //////////////////////////
-
-  socket.on("disconnect", () => { ONLINE_USERS.delete(user); });  
+  socket.on("disconnect", () => { ONLINE_USERS.delete(user); });
+  if (user.type === "reciever" || user.type === "cliciever") {
+    socket.on("init", (options: InitSetup) => {
+      if (options === undefined) return;
+      clearInterval(itv);
+      gameSetup = options;
+      initResources();
+      initSocket(user, socket);
+      
+      if (gameSetup.gameMode === "Most in Time") {
+        itv = setInterval(() => {
+          if (gameSetup?.gameMode !== "Most in Time") { clearInterval(itv); return; }
+          if (++timer >= gameSetup.time) {
+            socket.emit("end");
+            gameSetup = undefined;
+            clearInterval(itv);
+          } else {
+            socket.emit("timer", timer)
+          }
+        }, 1000);
+      }
+    });
+  }
   if (user.type === "clicker" || user.type === "cliciever") {  // always true, but including line so don't forget this check in the future
     socket.on("click", (color: Color) => {
+      if (gameSetup === undefined) return;
       if (color === "red") {
         io.emit("redClick", ++redClicks);
         socket.emit("redCPS", getCPS(redClickHist));  // socket to maintain only impactful transmission
