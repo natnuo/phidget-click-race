@@ -4,10 +4,11 @@ import { io } from "socket.io-client";
 import { Animated } from "react-animated-css";
 import { createRoot } from "react-dom/client";
 import { InitSetup } from "../../../lib/game-types";
+import { Chart } from "chart.js/auto";
 
-const RED = "#ff0000";
-const GREEN = "#00ff00";
-// const NEUTRAL = "#ffffff";
+const RED = "#ff0000";  // no 4 char hex for consistency
+const GREEN = "#00dd00";
+const SEMITRANSPARENT = "22";
 
 const POP_POSITION_MARGIN_FACTOR = 0.3;
 
@@ -22,6 +23,8 @@ const TW_TRANSITIONS = `${styles["transition-all"]} ${styles["duration-50"]}`;
 
 type GameMode = "None" | "First to Target" | "Most in Time" | "Neverending";
 type ClickColor = "r" | "g";
+
+Chart.defaults.font.family = "Lexend";
 
 export const sleep = async (ms: number) => { await new Promise(resolve => setTimeout(resolve, ms)); };
 
@@ -131,6 +134,9 @@ const App = () => {
     setTempTimer(timer);
     setTempTarget(target);
   }, [gameMode, timer, target]);
+  const forceGameEnd = useCallback(() => {
+    socket.emit("forceGameEnd");
+  }, [socket]);
   const newGame = useCallback(() => {
     if (tempGameMode === "None") return;
 
@@ -145,13 +151,153 @@ const App = () => {
           time: tempTimer,
         } as InitSetup);
         break;
+      case "First to Target":
+        socket.emit("init", {
+          gameMode: "First to Target",
+          target: tempTarget,
+        } as InitSetup);
+        break;
+      case "Neverending":
+        socket.emit("init", {
+          gameMode: "Neverending",
+        } as InitSetup);
+        break;
     }
   }, [tempGameMode, tempTimer, tempTarget, socket]);
 
-  const onEnd = useCallback(() => {
+  const settingsModalOpenerRef = useRef<HTMLInputElement>(null);
+  const gameOverOpenerRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (gameMode === "None" && settingsModalOpenerRef.current && (!gameOverOpenerRef.current || !gameOverOpenerRef.current.checked))
+      settingsModalOpenerRef.current.checked = true;
+  }, [gameMode]);
+
+  const cumChartRef = useRef<HTMLCanvasElement>(null);
+  const cpsChartRef = useRef<HTMLCanvasElement>(null);
+
+  const gameModeChoiceInputRef = useRef<HTMLSelectElement>(null);
+  const onEnd = useCallback((redClickHist: number[], greenClickHist: number[], redCPSHist: number[], greenCPSHist: number[]) => {
+    if (gameOverOpenerRef.current) gameOverOpenerRef.current.checked = true;
+    if (gameModeChoiceInputRef.current) gameModeChoiceInputRef.current.value = "None";
+
+    setTempGameMode("None");
     setGameMode("None");
     setTimer(tempTimer);
     setTarget(tempTarget);
+
+    if (cumChartRef.current) {
+      const cumChartStatus = Chart.getChart(cumChartRef.current);
+      cumChartStatus?.destroy();
+
+      new Chart(cumChartRef.current, {
+        type: "line",
+        data: {
+          labels: redClickHist.map((_, i) => { return i; }),
+          datasets: [
+            {
+              label: "Red",
+              data: redClickHist,
+              fill: true,
+              borderColor: RED,
+              pointRadius: 0,
+              backgroundColor: RED + SEMITRANSPARENT,
+              tension: 0.1
+            }, {
+              label: "Green",
+              data: greenClickHist,
+              fill: true,
+              borderColor: GREEN,
+              backgroundColor: GREEN + SEMITRANSPARENT,
+              pointRadius: 0,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+            x: {
+              ticks: {
+                callback: (value, index, ticks) => { return ""; }
+              },
+              grid: {
+                display: false,
+              },
+              beginAtZero: true,
+            }
+          },
+          plugins: {
+            legend: {
+              position: "top",
+            },
+            title: {
+              display: true,
+              text: "Cumulative Clicks"
+            }
+          }
+        }
+      });
+    }
+    
+    if (cpsChartRef.current) {
+      const cpsChartStatus = Chart.getChart(cpsChartRef.current);
+      cpsChartStatus?.destroy();
+
+      new Chart(cpsChartRef.current, {
+        type: "line",
+        data: {
+          labels: redCPSHist.map((_, i) => { return i; }),
+          datasets: [
+            {
+              label: "Red",
+              data: redCPSHist,
+              fill: true,
+              borderColor: RED,
+              pointRadius: 0,
+              backgroundColor: RED + SEMITRANSPARENT,
+              tension: 0.1
+            }, {
+              label: "Green",
+              data: greenCPSHist,
+              fill: true,
+              borderColor: GREEN,
+              backgroundColor: GREEN + SEMITRANSPARENT,
+              pointRadius: 0,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+            x: {
+              ticks: {
+                callback: (value, index, ticks) => { return ""; }
+              },
+              grid: {
+                display: false,
+              },
+              beginAtZero: true,
+            }
+          },
+          plugins: {
+            legend: {
+              position: "top",
+            },
+            title: {
+              display: true,
+              text: "Clicks per Second"
+            }
+          }
+        }
+      });
+    }
   }, [tempTimer, tempTarget]);
   const onTimer = useCallback((t: number) => {
     setTimer(tempTimer - t)
@@ -186,20 +332,26 @@ const App = () => {
       ${styles["overflow-clip"]}
     `}>
       <div>
-        <label
-          htmlFor="settings_modal"
-          className={`${styles["btn"]} ${styles["fixed"]} ${styles["top-5"]} ${styles["right-5"]} ${styles["z-10"]}`}
-        >Settings</label>
+        <div className={`${styles["fixed"]} ${styles["top-5"]} ${styles["right-5"]} ${styles["z-10"]} ${styles["flex"]} ${styles["gap-2"]}`}>
+          <label
+            htmlFor="settings_modal"
+            className={`${styles["btn"]}`}
+          >Settings</label>
+          <button
+            className={`${styles["btn"]} ${styles["btn-error"]}`}
+            onClick={forceGameEnd}
+          >End Game</button>
+        </div>
 
-        <input type="checkbox" id="settings_modal" className={`${styles["modal-toggle"]}`} />
+        <input type="checkbox" id="settings_modal" ref={settingsModalOpenerRef} className={`${styles["modal-toggle"]}`} />
         <div className={`${styles["modal"]}`} role="dialog">
           <div className={`${styles["modal-box"]} ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-2"]}`}>
             <h3 className={`${styles["text-lg"]} ${styles["font-bold"]}`}>Settings</h3>
             <select
               className={`${styles["select"]} ${styles["w-full"]} ${styles["max-w-xs"]} ${styles["mb-4"]}`}
-              onChange={(e) => { setTempGameMode(e.target.value as GameMode); }}
+              onChange={(e) => { setTempGameMode(e.target.value as GameMode); }} ref={gameModeChoiceInputRef}
             >
-              <option disabled selected>Game Mode</option>
+              <option value={"None" as GameMode} disabled selected>Game Mode</option>
               <option value={"First to Target" as GameMode}>First to Target</option>
               <option value={"Most in Time" as GameMode}>Most in Time</option>
               <option value={"Neverending" as GameMode}>Neverending</option>
@@ -268,6 +420,33 @@ const App = () => {
               ></label>
             ) : null
           }
+        </div>
+
+        <input type="checkbox" id="game_over_modal" ref={gameOverOpenerRef} className={`${styles["modal-toggle"]}`} />
+        <div className={`${styles["modal"]}`} role="dialog">
+          <div className={`${styles["modal-box"]} ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-2"]}`}>
+            <h3 className={`${styles["text-xl"]}`}>
+              {
+                redClicks === greenClicks
+                ? (
+                  <span className={`${styles["text-warning"]} ${styles["text-bold"]} ${styles["brightness-75"]}`}>Tie!</span>
+                ) : (
+                  redClicks > greenClicks
+                  ? (
+                    <><span className={`${styles["text-bold"]}`} style={{color: RED}}>Red</span> wins{"!"}</>
+                  ) : (
+                    <><span className={`${styles["text-bold"]}`} style={{color: GREEN}}>Green</span> wins{"!"}</>
+                  )
+                )
+              }
+            </h3>
+            <canvas ref={cumChartRef}></canvas>
+            <canvas ref={cpsChartRef}></canvas>
+          </div>
+          <label
+            className={`${styles["modal-backdrop"]}`} htmlFor="game_over_modal"
+            onClick={() => { if (settingsModalOpenerRef.current) settingsModalOpenerRef.current.checked = true; }}
+          ></label>
         </div>
       </div>
 
