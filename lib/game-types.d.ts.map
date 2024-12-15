@@ -1,0 +1,1 @@
+{"version":3,"file":"game-types.d.ts","sourceRoot":"","sources":["game-types.ts"],"names":[],"mappings":"AAAA,MAAM,MAAM,SAAS,GAAG;IACtB,QAAQ,EAAE,iBAAiB,CAAC;IAC5B,MAAM,EAAE,MAAM,CAAC;CAChB,GAAG;IACF,QAAQ,EAAE,cAAc,CAAC;IACzB,IAAI,EAAE,MAAM,CAAC;CACd,GAAG;IACF,QAAQ,EAAE,aAAa,CAAC;CACzB,CAAC"}
