@@ -32,6 +32,11 @@ const App = () => {
   const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
   const [LOADING, setLoading] = useState(true);
 
+  const [medsz, setMedsz] = useState(false);
+  useEffect(() => {
+    window.addEventListener("resize", () => { setMedsz(window.innerWidth >= 768); })
+  }, []);
+
   /////////////////
   // SOCKET INIT //
   /////////////////
@@ -460,7 +465,7 @@ const App = () => {
           ${styles["drop-shadow"]} ${styles["p-4"]} ${styles["rounded"]}
           ${styles["min-w-20"]} ${TW_TRANSITIONS}
           ${styles["flex"]} ${styles["justify-center"]}
-        `} style={{ left: `${getRedSizeFactor() * 100}%` }}>
+        `} style={medsz ? { left: `${getRedSizeFactor() * 100}%` } : { top: `${getRedSizeFactor() * 100}%` }}>
           {timer}
         </div>) : null
       }
