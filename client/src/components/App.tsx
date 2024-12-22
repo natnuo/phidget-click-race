@@ -37,7 +37,7 @@ const App = () => {
   /////////////////
   const socket = useMemo(() => {
     return io(
-      `ws://${window.location.hostname}${__PRODUCTION__.current ? "" : ":3001"}`,
+      `ws://${window.location.hostname}${__PRODUCTION__.current ? ":443" : ":3001"}`,
       { extraHeaders: { user: JSON.stringify({ username: "", email: "", type: "cliciever" }) } }
     );
   }, [__PRODUCTION__]);
