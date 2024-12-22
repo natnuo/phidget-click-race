@@ -459,7 +459,7 @@ const App = () => {
         gameMode === "Most in Time"
         ? (<div className={`
           ${styles["fixed"]} ${styles["text-4xl"]}
-          ${styles["top-1/2"]}
+          ${styles["md:top-1/2"]} ${styles["left-1/2"]}
           ${styles["-translate-x-1/2"]} ${styles["-translate-y-1/2"]}
           ${styles["z-20"]} ${styles["bg-neutral"]} ${styles["text-neutral-content"]}
           ${styles["drop-shadow"]} ${styles["p-4"]} ${styles["rounded"]}
