@@ -381,7 +381,7 @@ const App = () => {
               </p>
 
               <p>
-                Using PIP, install <code>"python-socketio[client]"</code>,
+                Using PIP, install <code>"python-socketio[client]"</code>,{" "}
                 <code>websocket-client</code>, <code>requests</code>, and <code>Phidget22</code>.
               </p>
 
