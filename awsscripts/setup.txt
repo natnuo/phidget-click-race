@@ -18,7 +18,9 @@ sudo chgrp -R nodecert /etc/letsencrypt/archive
 sudo chmod -R 750 /etc/letsencrypt/live
 sudo chmod -R 750 /etc/letsencrypt/archive
 
-# NOW WRITE ENV. VARS. INTO /etc/app.env, THEN
+# git clone
+
+# NOW WRITE ENV. VARS. INTO ~/app.env, THEN
 
 # NOW WRITE SERVICE TO /etc/systemd/system/myapp.service
 e.g.
@@ -28,19 +30,34 @@ After=network.target multi-user.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/badavas-secure
+WorkingDirectory=/home/ubuntu/myfirstphidgetproject/server
 ExecStart=/usr/bin/npm start
 Restart=always
 Environment=NODE_ENV=production
-EnvironmentFile=/etc/badavas/app.env
+EnvironmentFile=/home/ubuntu/app.env
 SyslogIdentifier=badavas
 
 [Install]
 WantedBy=multi-user.target
 
-sudo bash build.bash
+# run install and build processes
 
-sudo systemctl daemon-reload &&
-sudo systemctl enable myapp.service &&
-sudo systemctl start myapp.service &&
-sudo journalctl -fu myapp.service
+sudo -i
+passwd ubuntu
+exit
+
+systemctl daemon-reload &&
+systemctl enable myapp.service &&
+systemctl start myapp.service &&
+journalctl -fu myapp.service
+
+vim update.bash
+# write update script, e.g.
+cd myfirstphidgetproject
+git pull
+cd scripts
+bash install.bash
+bash build.bash
+cd ../..
+systemctl restart myapp.service
+journalctl -fu myapp.service

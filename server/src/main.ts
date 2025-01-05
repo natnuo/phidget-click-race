@@ -40,6 +40,11 @@ app.get("/", (req, res) => {
   res.sendFile(path.resolve(__dirname, `../../client/build`, "index.html"));
 });
 
+app.get("/phidget-client", (req, res) => {
+  const filePath = path.join(__dirname, "../../client/phidget.py");
+  res.download(filePath);
+});
+
 /////////////////////
 // RESOURCE CONSTS //
 /////////////////////
@@ -55,7 +60,7 @@ let ONLINE_USERS: Set<User> = new Set();
 let redClicks: number, greenClicks: number;
 
 const DNE = -1;
-const MIN_CLICK_HIST_SIZE = 33;
+const MIN_CLICK_HIST_SIZE = 10;
 const MAX_CLICK_HIST_SIZE = 100000000;
 let timer: number;
 let redClickHist: number[], greenClickHist: number[];

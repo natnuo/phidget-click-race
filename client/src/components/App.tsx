@@ -20,6 +20,9 @@ const TW_MAJOR_CONT = `${styles["w-svw"]} ${styles["h-svh"]} ${styles["fixed"]}
 `;
 const TW_SETTINGS_CONT = `${styles["flex"]} ${styles["items-center"]} ${styles["gap-4"]}`;
 const TW_TRANSITIONS = `${styles["transition-all"]} ${styles["duration-50"]}`;
+const TW_INSTR_FOCUS = `${styles["block"]} ${styles["w-full"]} ${styles["m-1"]}
+  ${styles["p-2"]} ${styles["rounded"]} ${styles["bg-gray-200"]}
+`;
 
 type GameMode = "None" | "First to Target" | "Most in Time" | "Neverending";
 type ClickColor = "r" | "g";
@@ -32,12 +35,17 @@ const App = () => {
   const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
   const [LOADING, setLoading] = useState(true);
 
+  const [medsz, setMedsz] = useState(false);
+  useEffect(() => {
+    window.addEventListener("resize", () => { setMedsz(window.innerWidth >= 768); })
+  }, []);
+
   /////////////////
   // SOCKET INIT //
   /////////////////
   const socket = useMemo(() => {
     return io(
-      `ws://${window.location.hostname}${__PRODUCTION__.current ? "" : ":3001"}`,
+      `${__PRODUCTION__.current ? "https://" : "http://"}${window.location.hostname}${__PRODUCTION__.current ? ":443" : ":3001"}`,
       { extraHeaders: { user: JSON.stringify({ username: "", email: "", type: "cliciever" }) } }
     );
   }, [__PRODUCTION__]);
@@ -165,6 +173,7 @@ const App = () => {
     }
   }, [tempGameMode, tempTimer, tempTarget, socket]);
 
+  const phidgetSetupModalRef = useRef<HTMLDialogElement>(null);
   const settingsModalOpenerRef = useRef<HTMLInputElement>(null);
   const gameOverOpenerRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -333,6 +342,10 @@ const App = () => {
     `}>
       <div>
         <div className={`${styles["fixed"]} ${styles["top-5"]} ${styles["right-5"]} ${styles["z-10"]} ${styles["flex"]} ${styles["gap-2"]}`}>
+          <button
+            onClick={() => { phidgetSetupModalRef.current?.showModal(); }}
+            className={`${styles["btn"]} ${styles["btn-warning"]}`}
+          >Phidget Setup</button>
           <label
             htmlFor="settings_modal"
             className={`${styles["btn"]}`}
@@ -342,6 +355,90 @@ const App = () => {
             onClick={forceGameEnd}
           >End Game</button>
         </div>
+
+        <dialog ref={phidgetSetupModalRef} className={`${styles["modal"]}`}>
+          <div className={`${styles["modal-box"]} ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-3"]}`}>
+            <h3 className={`${styles["text-lg"]} ${styles["font-bold"]}`}>Phidget Setup Instructions</h3>
+
+            <section className={`${styles["flex"]} ${styles["flex-col"]} ${styles["gap-1"]}`}>
+              <h4 className={`${styles["font-bold"]}`}>1. Downloading the Python File</h4>
+
+              <p>Python file download link:</p>
+
+              <a
+                className={`${TW_INSTR_FOCUS}`}
+                href="https://phidget1.ntao.dev/phidget-client"
+              >
+                https://phidget1.ntao.dev/phidget-client
+              </a>
+            </section>
+
+            <section className={`${styles["flex"]} ${styles["flex-col"]} ${styles["gap-1"]}`}>
+              <h4 className={`${styles["font-bold"]}`}>2. Running the Python File</h4>
+
+              <p>
+                Download <a href="https://www.python.org/downloads/">Python</a> if you have not already.
+              </p>
+
+              <p>
+                Using PIP, install <code>"python-socketio[client]"</code>,
+                <code>websocket-client</code>, <code>requests</code>, and <code>Phidget22</code>.
+              </p>
+
+              <p>
+                <i>Option 1: In the console:</i>
+              </p>
+
+              <div className={`${TW_INSTR_FOCUS}`}>
+                <code>pip install "python-socketio[client]"</code><br/>
+                <code>pip install websocket-client</code><br/>
+                <code>pip install requests</code><br/>
+                <code>pip install Phidget22</code>
+              </div>
+
+              <p>
+                <i>Option 2: In Thonny:</i>
+              </p>
+
+              <p>
+                Go to <u>Tools {">"} Manage Packages</u>
+              </p>
+              <p>
+                Search for and install "python-socketio". Do the same for "websocket-client",
+                "requests", and "phidget22".
+              </p>
+              <p>
+                You can now successfully execute the Python file! 🎉
+              </p>
+            </section>
+
+            <section className={`${styles["flex"]} ${styles["flex-col"]} ${styles["gap-1"]}`}>
+              <h4 className={`${styles["font-bold"]}`}>3. Configuring the Phidget</h4>
+
+              <p>
+                Final step... Ensure your Phidget ports are properly configured.
+              </p>
+              <p>
+                The Python program expects the following configuration:
+              </p>
+                
+              <div className={`${TW_INSTR_FOCUS}`}>
+                Red Button → Port 0<br/>
+                Green Button → Port 5<br/>
+                Red LED → Port 1<br/>
+                Green LED → Port 4
+              </div>
+
+              <p>
+                Ensure your Phidget matches the expected setup. Once it does,
+                you should be ready to play <b>Phidget Tug-Of-War!</b>
+              </p>
+            </section>
+          </div>
+          <form method="dialog" className={`${styles["modal-backdrop"]}`}>
+            <button>Close</button>
+          </form>
+        </dialog>
 
         <input type="checkbox" id="settings_modal" ref={settingsModalOpenerRef} className={`${styles["modal-toggle"]}`} />
         <div className={`${styles["modal"]}`} role="dialog">
@@ -454,13 +551,13 @@ const App = () => {
         gameMode === "Most in Time"
         ? (<div className={`
           ${styles["fixed"]} ${styles["text-4xl"]}
-          ${styles["top-1/2"]}
+          ${styles["md:top-1/2"]} ${styles["left-1/2"]}
           ${styles["-translate-x-1/2"]} ${styles["-translate-y-1/2"]}
           ${styles["z-20"]} ${styles["bg-neutral"]} ${styles["text-neutral-content"]}
           ${styles["drop-shadow"]} ${styles["p-4"]} ${styles["rounded"]}
           ${styles["min-w-20"]} ${TW_TRANSITIONS}
           ${styles["flex"]} ${styles["justify-center"]}
-        `} style={{ left: `${getRedSizeFactor() * 100}%` }}>
+        `} style={medsz ? { left: `${getRedSizeFactor() * 100}%` } : { top: `${getRedSizeFactor() * 100}%` }}>
           {timer}
         </div>) : null
       }

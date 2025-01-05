@@ -3,7 +3,7 @@ from Phidget22.Phidget import *
 from Phidget22.Devices.DigitalInput import *
 from Phidget22.Devices.DigitalOutput import *
 
-SERVER_ADDRESS = "http://localhost:3001";
+SERVER_ADDRESS = "https://phidget1.ntao.dev";
 
 ports = {
     "redButton": 0,
@@ -23,9 +23,6 @@ for name, device in devices.items():
     device.setHubPort(ports[name])
     device.setIsHubPortDevice(True)
     device.openWaitForAttachment(1000)
-
-#NOTES
-# ADD WIN CONDITION, TIMER OR MAX SCORE
 
 def pginput():
     lastRedState = False
