@@ -405,7 +405,7 @@ const App = () => {
               </p>
               <p>
                 Search for and install "python-socketio". Do the same for "websocket-client",
-                "requests", and "phidget22".
+                "requests", "phidget22", <b>and "phidget22-native"</b>.
               </p>
               <p>
                 You can now successfully execute the Python file! 🎉
