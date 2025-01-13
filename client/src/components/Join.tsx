@@ -7,8 +7,9 @@ const TW_PGT_BTN_GEN = `
         ${styles["w-44"]} ${styles["h-44"]}
         ${styles["sm:w-64"]} ${styles["sm:h-64"]}
         ${styles["rounded-full"]} ${styles["drop-shadow-xl"]}
-        ${styles["btn"]} ${styles["select-none"]}
-        ${styles["text-8xl"]}
+        ${styles["select-none"]} ${styles["text-8xl"]} ${styles["cursor-not-allowed"]}
+        ${styles["transition-transform"]}
+        ${styles["flex"]} ${styles["items-center"]} ${styles["justify-center"]}
 `;
 
 export const Join = (
@@ -42,26 +43,32 @@ export const Join = (
         // COLOR KEYBOARD CONTROLS //
         /////////////////////////////
         const [selectedColor, setSelectedColor] = useState<"green" | "red">("red");
-        const redButtonRef = useRef<HTMLButtonElement>(null);
-        const greenButtonRef = useRef<HTMLButtonElement>(null);
-        const listenForSpaceClickRed = useCallback((e: KeyboardEvent) => {
+        const redButtonRef = useRef<HTMLDivElement>(null);
+        const greenButtonRef = useRef<HTMLDivElement>(null);
+        const sendClick = useCallback((color: "red" | "green") => {
+                socket.emit("click", color);
+                new Audio(require("../util/positive.mp3")).play();
+        }, [socket]);
+        const listenForSpaceUpRed = useCallback((e: KeyboardEvent) => {
                 if (e.code === "Space" && redButtonRef.current) {
-                        redButtonRef.current.click();
+                        sendClick("red");
+                        redButtonRef.current.style.transform = "scale(1)";
+                }
+        }, [sendClick]);
+        const listenForSpaceDownRed = useCallback((e: KeyboardEvent) => {
+                if (e.code === "Space" && redButtonRef.current) {
                         redButtonRef.current.style.transform = "scale(0.9)";
-                        setTimeout(() => {
-                                if (redButtonRef.current)
-                                        redButtonRef.current.style.transform = "scale(1)";
-                        }, 100);
                 }
         }, []);
-        const listenForSpaceClickGreen = useCallback((e: KeyboardEvent) => {  // can't just to one space listener bc then deleting doesn't work for weird reasons
+        const listenForSpaceUpGreen = useCallback((e: KeyboardEvent) => {  // can't just to one space listener bc then deleting doesn't work for weird reasons
                 if (e.code === "Space" && greenButtonRef.current) {
-                        greenButtonRef.current?.click();
+                        sendClick("green");
+                        greenButtonRef.current.style.transform = "scale(1)";
+                }
+        }, [sendClick]);
+        const listenForSpaceDownGreen = useCallback((e: KeyboardEvent) => {
+                if (e.code === "Space" && greenButtonRef.current) {
                         greenButtonRef.current.style.transform = "scale(0.9)";
-                        setTimeout(() => {
-                                if (greenButtonRef.current)
-                                        greenButtonRef.current.style.transform = "scale(1)";
-                        }, 100);  // setTimeout here -- a bit sketch
                 }
         }, []);
         const listenForGreenSwap = useCallback((e: KeyboardEvent) => {
@@ -73,21 +80,33 @@ export const Join = (
         useEffect(() => {
                 document.removeEventListener("keydown", listenForGreenSwap);
                 document.removeEventListener("keydown", listenForRedSwap);
-                document.removeEventListener("keydown", listenForSpaceClickRed);
-                document.removeEventListener("keydown", listenForSpaceClickGreen);
+                document.removeEventListener("keydown", listenForSpaceDownRed);
+                document.removeEventListener("keydown", listenForSpaceDownGreen);
+                document.removeEventListener("keyup", listenForSpaceUpRed);
+                document.removeEventListener("keyup", listenForSpaceUpGreen);
 
                 if (selectedColor === "red") {
                         document.addEventListener("keydown", listenForGreenSwap);
-                        document.addEventListener("keydown", listenForSpaceClickRed);
+                        document.addEventListener("keydown", listenForSpaceDownRed);
+                        document.addEventListener("keyup", listenForSpaceUpRed);
                 } else if (selectedColor === "green") {
                         document.addEventListener("keydown", listenForRedSwap);
-                        document.addEventListener("keydown", listenForSpaceClickGreen);
+                        document.addEventListener("keydown", listenForSpaceDownGreen);
+                        document.addEventListener("keyup", listenForSpaceUpGreen);
                 }
-        }, [selectedColor, listenForRedSwap, listenForGreenSwap, listenForSpaceClickRed, listenForSpaceClickGreen]);
+        }, [
+                selectedColor,
+                listenForRedSwap,
+                listenForGreenSwap,
+                listenForSpaceUpRed,
+                listenForSpaceUpGreen,
+                listenForSpaceDownRed,
+                listenForSpaceDownGreen
+        ]);
 
         return (
                 <div className={`
-                        ${styles["w-svw"]} ${styles["h-svh"]}
+                        ${styles["w-svw"]} ${styles["h-svh"]} ${styles["select-none"]}
                         ${styles["overflow-clip"]} ${styles["bg-blue-50"]}
                 `}>
                         <div className={`
@@ -112,33 +131,25 @@ export const Join = (
                                         ${styles["gap-6"]} ${styles["sm:gap-12"]}
                                         ${styles["items-center"]} ${styles["justify-center"]}
                                 `}>
-                                        <button className={`
+                                        <div className={`
                                                         ${styles["!bg-[#f00]"]} ${TW_PGT_BTN_GEN}
                                                 `}
-                                                onClick={() => {
-                                                        socket.emit("click", "red");
-                                                        new Audio(require("../util/positive.mp3")).play();
-                                                }}
                                                 ref={redButtonRef}
                                         >{
                                                 selectedColor === "red" ? "•" : (
                                                         medsz ? "🠈" : "🠉"
                                                 )
-                                        }</button>
-                                        <button className={`
+                                        }</div>
+                                        <div className={`
                                                         ${styles["!bg-[#0f0]"]} ${TW_PGT_BTN_GEN}
                                                 `}
-                                                onClick={() => {
-                                                        socket.emit("click", "green");
-                                                        new Audio(require("../util/positive.mp3")).play();
-                                                }}
                                                 ref={greenButtonRef}
                                         >{
                                                 selectedColor === "green" ? "•" : 
                                                 (
                                                         medsz ? "🠊" : "🠋"
                                                 )
-                                        }</button>
+                                        }</div>
                                 </div>
                                 <h1 className={`
                                         ${styles["text-3xl"]}
