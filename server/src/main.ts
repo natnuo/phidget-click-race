@@ -17,6 +17,8 @@ const SSL_KEY = fs.readFileSync(process.env.SSL_KEY ?? path.resolve(__dirname, "
 const SSL_CERT = fs.readFileSync(process.env.SSL_CERT ?? path.resolve(__dirname, "../cert.pem"));
 const PORT = __PRODUCTION__ ? 443 : 3001;
 
+console.log(process.env);
+
 const app = express();
 
 const server = __PRODUCTION__
