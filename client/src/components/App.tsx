@@ -14,7 +14,7 @@ const MIN_TEXT_LOAD_TIME_MS = 500;
 const STD_ANIMATION_TIME_MS = 1000;
 
 export const App = () => {
-        const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
+        const __PRODUCTION__ = useRef(window.location.protocol === "https:");
 
         const [gameState, setGameState] = useState<GameState>("waiting");
         // laggingGameState necessary to keep showing an outgoing gameState (as it moves through the animation)

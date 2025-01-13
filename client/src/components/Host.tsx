@@ -79,7 +79,10 @@ export const Host = (
 
     if (!tgtRef.current) return;
 
+    const cname = `e-pop-${Date.now()}`;
+
     const newElement = document.createElement("div"); tgtRef.current.appendChild(newElement);
+    newElement.className = cname;
     newElement.style.position = "absolute"; newElement.style.width = "100%"; newElement.style.height = "100%";
     const root = createRoot(newElement);
 
@@ -93,6 +96,7 @@ export const Host = (
         className={`
           ${styles["w-44"]} ${styles["sm:w-52"]} ${styles["md:w-60"]} ${styles["aspect-square"]} ${styles["absolute"]}
           ${styles["-translate-x-1/2"]} ${styles["-translate-y-1/2"]}
+          ${cname}
         `}
       >
         <div className={`
@@ -102,6 +106,8 @@ export const Host = (
         `}></div>
       </div>
     );
+
+    setTimeout(() => { document.querySelector(`.${cname}`)?.remove(); }, 4444);
   }, []);
 
   /////////////////////////////
