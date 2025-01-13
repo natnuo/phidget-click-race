@@ -72,7 +72,8 @@ const initResources = () => {
 };
 initResources();
 
-let gameSetup: InitSetup | undefined = undefined;
+const NO_GAME_MODE_SETUP: InitSetup = { gameMode: "None" };
+let gameSetup: InitSetup = NO_GAME_MODE_SETUP;
 
 //////////////////////
 // HELPER FUNCTIONS //
@@ -100,7 +101,14 @@ const log = (action: Loggable) => {
 ///////////////////////////////////
 const initSocket = (user: User, socket: Socket) => {
   if (user.type === "reciever" || user.type === "cliciever")
-    socket.emit("initialState", redClicks, greenClicks, getCPS(redClickHist), getCPS(greenClickHist), gameSetup);
+    socket.emit(
+      "initialState",
+      redClicks,
+      greenClicks,
+      getCPS(redClickHist),
+      getCPS(greenClickHist),
+      gameSetup
+    );
 };
 const end = (socket: Socket) => {
   socket.emit("end",
@@ -108,7 +116,7 @@ const end = (socket: Socket) => {
     redClickHist.map((_, i) => { return getCPS(redClickHist.slice(0, i)); }),
     greenClickHist.map((_, i) => { return getCPS(greenClickHist.slice(0, i)); })
   );
-  gameSetup = undefined;
+  gameSetup = NO_GAME_MODE_SETUP;
 };
 let itv: NodeJS.Timeout | undefined = undefined;
 io.on("connection", (socket) => {
