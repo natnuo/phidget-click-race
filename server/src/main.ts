@@ -110,8 +110,8 @@ const initSocket = (user: User, socket: Socket) => {
       gameSetup
     );
 };
-const end = (socket: Socket) => {
-  socket.emit("end",
+const end = () => {
+  io.to("reciever").emit("end",
     redClickHist, greenClickHist,
     redClickHist.map((_, i) => { return getCPS(redClickHist.slice(0, i)); }),
     greenClickHist.map((_, i) => { return getCPS(greenClickHist.slice(0, i)); })
@@ -129,6 +129,17 @@ io.on("connection", (socket) => {
   ONLINE_USERS.add(user);
   
   initSocket(user, socket);
+  switch (user.type) {
+    case "cliciever":
+      socket.join(["clicker", "reciever"]);
+      break;
+    case "clicker":
+      socket.join("clicker");
+      break;
+    case "reciever":
+      socket.join("reciever");  // many shorter ways to write this switch statement but i want readability
+      break;
+  }
 
   //////////////////////////
   // POST-INTITIALIZATION //
@@ -147,33 +158,30 @@ io.on("connection", (socket) => {
           itv = setInterval(() => {
             if (gameSetup?.gameMode !== "Most in Time") { clearInterval(itv); return; }
             if (++timer >= gameSetup.time) {
-              end(socket);
+              end();
               clearInterval(itv);
             } else {
-              socket.emit("timer", timer)
+              io.to("reciever").emit("timer", timer)
             }
           }, 1000);
           break;
       }
     });
 
-    socket.on("forceGameEnd", () => { end(socket); });
+    socket.on("forceGameEnd", () => { end(); });
   }
   if (user.type === "clicker" || user.type === "cliciever") {  // always true, but including line so don't forget this check in the future
     socket.on("click", (color: Color) => {
       if (gameSetup === undefined) return;
       if (color === "red") {
-        io.emit("redClick", ++redClicks);
-        socket.emit("redCPS", getCPS(redClickHist));  // socket to maintain only impactful transmission
+        io.to("reciever").emit("redClick", ++redClicks);
+        io.to("reciever").emit("redCPS", getCPS(redClickHist));
       } else {
-        io.emit("greenClick", ++greenClicks);
-        socket.emit("greenCPS", getCPS(greenClickHist));
+        io.to("reciever").emit("greenClick", ++greenClicks);
+        io.to("reciever").emit("greenCPS", getCPS(greenClickHist));
       }
 
-      if (
-        gameSetup.gameMode === "First to Target" &&
-        Math.max(redClicks, greenClicks) >= gameSetup.target
-      ) end(socket);
+      if (gameSetup.gameMode === "First to Target" && Math.max(redClicks, greenClicks) >= gameSetup.target) end();
     });
   }
 });

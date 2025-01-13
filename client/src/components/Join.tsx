@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "../css/index.module.css";
 import { GameState } from "./App";
 import { io } from "socket.io-client";
@@ -7,7 +7,8 @@ const TW_PGT_BTN_GEN = `
         ${styles["w-44"]} ${styles["h-44"]}
         ${styles["sm:w-64"]} ${styles["sm:h-64"]}
         ${styles["rounded-full"]} ${styles["drop-shadow-xl"]}
-        ${styles["btn"]}
+        ${styles["btn"]} ${styles["select-none"]}
+        ${styles["text-8xl"]}
 `;
 
 export const Join = (
@@ -23,6 +24,66 @@ export const Join = (
             { extraHeaders: { user: JSON.stringify({ username: "", email: "", type: "clicker" }) } }
           );
         }, [__PRODUCTION__]);
+
+        //////////////////////
+        // RESIZING HELPERS //
+        //////////////////////
+        const [medsz, setMedsz] = useState(false);
+        useEffect(() => {
+          const updMedsz = () => {
+            setMedsz(window.innerWidth >= 768);
+          };
+      
+          window.addEventListener("resize", updMedsz)
+          updMedsz();
+        }, []);
+        
+        /////////////////////////////
+        // COLOR KEYBOARD CONTROLS //
+        /////////////////////////////
+        const [selectedColor, setSelectedColor] = useState<"green" | "red">("red");
+        const redButtonRef = useRef<HTMLButtonElement>(null);
+        const greenButtonRef = useRef<HTMLButtonElement>(null);
+        const listenForSpaceClickRed = useCallback((e: KeyboardEvent) => {
+                if (e.code === "Space" && redButtonRef.current) {
+                        redButtonRef.current.click();
+                        redButtonRef.current.style.transform = "scale(0.9)";
+                        setTimeout(() => {
+                                if (redButtonRef.current)
+                                        redButtonRef.current.style.transform = "scale(1)";
+                        }, 100);
+                }
+        }, []);
+        const listenForSpaceClickGreen = useCallback((e: KeyboardEvent) => {  // can't just to one space listener bc then deleting doesn't work for weird reasons
+                if (e.code === "Space" && greenButtonRef.current) {
+                        greenButtonRef.current?.click();
+                        greenButtonRef.current.style.transform = "scale(0.9)";
+                        setTimeout(() => {
+                                if (greenButtonRef.current)
+                                        greenButtonRef.current.style.transform = "scale(1)";
+                        }, 100);  // setTimeout here -- a bit sketch
+                }
+        }, []);
+        const listenForGreenSwap = useCallback((e: KeyboardEvent) => {
+                if (e.code === "ArrowDown" || e.code === "ArrowRight") setSelectedColor("green");
+        }, []);
+        const listenForRedSwap = useCallback((e: KeyboardEvent) => {
+                if (e.code === "ArrowUp" || e.code === "ArrowLeft") setSelectedColor("red");
+        }, []);
+        useEffect(() => {
+                document.removeEventListener("keydown", listenForGreenSwap);
+                document.removeEventListener("keydown", listenForRedSwap);
+                document.removeEventListener("keydown", listenForSpaceClickRed);
+                document.removeEventListener("keydown", listenForSpaceClickGreen);
+
+                if (selectedColor === "red") {
+                        document.addEventListener("keydown", listenForGreenSwap);
+                        document.addEventListener("keydown", listenForSpaceClickRed);
+                } else if (selectedColor === "green") {
+                        document.addEventListener("keydown", listenForRedSwap);
+                        document.addEventListener("keydown", listenForSpaceClickGreen);
+                }
+        }, [selectedColor, listenForRedSwap, listenForGreenSwap, listenForSpaceClickRed, listenForSpaceClickGreen]);
 
         return (
                 <div className={`
@@ -52,11 +113,32 @@ export const Join = (
                                         ${styles["items-center"]} ${styles["justify-center"]}
                                 `}>
                                         <button className={`
-                                                ${styles["!bg-[#f00]"]} ${TW_PGT_BTN_GEN}
-                                        `} onClick={() => { socket.emit("click", "red"); }}></button>
+                                                        ${styles["!bg-[#f00]"]} ${TW_PGT_BTN_GEN}
+                                                `}
+                                                onClick={() => {
+                                                        socket.emit("click", "red");
+                                                        new Audio(require("../util/positive.mp3")).play();
+                                                }}
+                                                ref={redButtonRef}
+                                        >{
+                                                selectedColor === "red" ? "•" : (
+                                                        medsz ? "🠈" : "🠉"
+                                                )
+                                        }</button>
                                         <button className={`
-                                                ${styles["!bg-[#0f0]"]} ${TW_PGT_BTN_GEN}
-                                        `} onClick={() => { socket.emit("click", "green"); }}></button>
+                                                        ${styles["!bg-[#0f0]"]} ${TW_PGT_BTN_GEN}
+                                                `}
+                                                onClick={() => {
+                                                        socket.emit("click", "green");
+                                                        new Audio(require("../util/positive.mp3")).play();
+                                                }}
+                                                ref={greenButtonRef}
+                                        >{
+                                                selectedColor === "green" ? "•" : 
+                                                (
+                                                        medsz ? "🠊" : "🠋"
+                                                )
+                                        }</button>
                                 </div>
                                 <h1 className={`
                                         ${styles["text-3xl"]}

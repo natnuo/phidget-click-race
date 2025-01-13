@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../css/index.module.css";
 import { Host } from "./Host";
 import { Waiting } from "./Waiting";
@@ -10,24 +10,34 @@ export type GameState = "host" | "join" | "waiting";
 const MIN_FULL_LOAD_TIME_MS = 2000;
 const MIN_TEXT_LOAD_TIME_MS = 500;
 
+const STD_ANIMATION_TIME_MS = 1000;
+
 export const App = () => {
         const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
 
         const [gameState, setGameState] = useState<GameState>("waiting");
+        // laggingGameState necessary to keep showing an outgoing gameState (as it moves through the animation)
+        const [laggingGameState, setLaggingGameState] = useState<GameState>("waiting");
+
+        useEffect(() => {
+                setTimeout(() => {
+                        setLaggingGameState(gameState);
+                }, STD_ANIMATION_TIME_MS);
+        }, [gameState]);
         
         return (
                 <>
-                        { /*
-                                Three <Animated>'s forces each option to load, which, admittedly, is quite inefficient
-                                and is room for improvement
-                        */ }
                         <Animated
                                 isVisible={gameState === "waiting"}
                                 animationIn="fadeIn"
                                 animationOut="fadeOut"
                                 className={`${gameState === "waiting" ? styles["z-10"] : ""} ${styles["fixed"]}`}
                         >
-                                <Waiting setGameState={setGameState} production={__PRODUCTION__}></Waiting>
+                                {
+                                        gameState === "waiting" || laggingGameState === "waiting"
+                                        ? <Waiting setGameState={setGameState} production={__PRODUCTION__}></Waiting>
+                                        : null
+                                }
                         </Animated>
                         <Animated
                                 isVisible={gameState === "host"}
@@ -35,7 +45,11 @@ export const App = () => {
                                 animationOut="fadeOut"
                                 className={`${gameState === "host" ? styles["z-10"] : ""} ${styles["fixed"]}`}
                         >
-                                <Host setGameState={setGameState} production={__PRODUCTION__}></Host>
+                                {
+                                        gameState === "host" || laggingGameState === "host"
+                                        ? <Host setGameState={setGameState} production={__PRODUCTION__}></Host>
+                                        : null
+                                }
                         </Animated>
                         <Animated
                                 isVisible={gameState === "join"}
@@ -43,7 +57,11 @@ export const App = () => {
                                 animationOut="fadeOut"
                                 className={`${gameState === "join" ? styles["z-10"] : ""} ${styles["fixed"]}`}
                         >
-                                <Join setGameState={setGameState} production={__PRODUCTION__}></Join>
+                                {
+                                        gameState === "join" || laggingGameState === "join"
+                                        ? <Join setGameState={setGameState} production={__PRODUCTION__}></Join>
+                                        : null
+                                }
                         </Animated>
 
                         {/* Extra animated to hide initial mess */}
