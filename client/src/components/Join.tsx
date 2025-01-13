@@ -30,6 +30,18 @@ export const Join = (
                         ${styles["overflow-clip"]} ${styles["bg-blue-50"]}
                 `}>
                         <div className={`
+                                ${styles["fixed"]} ${styles["top-5"]}
+                                ${styles["right-5"]} ${styles["z-10"]}
+                                ${styles["flex"]} ${styles["gap-2"]}
+                        `}>
+                                <button
+                                        className={`${styles["btn"]} ${styles["btn-warning"]}`}
+                                        onClick={() => { setGameState("waiting"); }}
+                                >
+                                        To Home
+                                </button>
+                        </div>
+                        <div className={`
                                 ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-12"]}
                                 ${styles["items-center"]} ${styles["justify-center"]}
                                 ${styles["h-full"]}
