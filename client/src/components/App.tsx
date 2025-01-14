@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "../css/index.module.css";
 import { Host } from "./Host";
 import { Waiting } from "./Waiting";
 import { Join } from "./Join";
 import { Animated } from "react-animated-css";
+import { useNavigate } from "react-router";
 
 export type GameState = "host" | "join" | "waiting";
 
@@ -13,12 +14,28 @@ const MIN_TEXT_LOAD_TIME_MS = 500;
 const STD_ANIMATION_TIME_MS = 1000;
 
 export const App = () => {
-        const __PRODUCTION__ = useRef(window.location.hostname !== "localhost");
+        const __PRODUCTION__ = useRef(window.location.protocol === "https:");
 
         const [gameState, setGameState] = useState<GameState>("waiting");
         // laggingGameState necessary to keep showing an outgoing gameState (as it moves through the animation)
         const [laggingGameState, setLaggingGameState] = useState<GameState>("waiting");
 
+        ////////////////////////
+        // HISTORY MANAGEMENT //
+        ////////////////////////
+        const popStateListener = useCallback((e: PopStateEvent) => {
+                console.log(e.state);
+                setGameState(e.state.usr.gameState);
+        }, []);
+
+        useEffect(() => {
+                window.addEventListener("popstate", popStateListener);
+        }, [popStateListener]);
+
+        const navigate = useNavigate();
+        useEffect(() => {
+                navigate("/", { state: { gameState } });
+        }, [gameState, navigate]);
         useEffect(() => {
                 setTimeout(() => {
                         setLaggingGameState(gameState);
