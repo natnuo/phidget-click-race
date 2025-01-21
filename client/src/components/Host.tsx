@@ -121,9 +121,7 @@ export const Host = (
   ////////////////////////////
   // CLICK AND CPS UPDATERS //
   ////////////////////////////
-
   const sigmoid = (x: number) => { return 1 / (1 + Math.exp(-x)); }
-
   const onRedClick = useCallback((_redClicks: number) => {
     setRedClicks(_redClicks);
     showClickSymbol("r");
@@ -207,6 +205,8 @@ export const Host = (
   const cumChartRef = useRef<HTMLCanvasElement>(null);
   const cpsChartRef = useRef<HTMLCanvasElement>(null);
 
+  const [winner, setWinner] = useState<"red" | "green" | "tie">();
+
   const gameModeChoiceInputRef = useRef<HTMLSelectElement>(null);
   const onEnd = useCallback((redClickHist: number[], greenClickHist: number[], redCPSHist: number[], greenCPSHist: number[]) => {
     if (gameOverOpenerRef.current) gameOverOpenerRef.current.checked = true;
@@ -216,6 +216,10 @@ export const Host = (
     setGameMode("None");
     setTimer(tempTimer);
     setTarget(tempTarget);
+
+    if ((redClickHist.at(-1)??0) > (greenClickHist.at(-1)??0)) setWinner("red");
+    else if ((redClickHist.at(-1)??0) === (greenClickHist.at(-1)??0)) setWinner("tie");
+    else setWinner("green");
 
     if (cumChartRef.current) {
       const cumChartStatus = Chart.getChart(cumChartRef.current);
@@ -498,7 +502,7 @@ export const Host = (
                   <div className={`${TW_SETTINGS_CONT}`}>
                     <span>Timer</span>
                     <input
-                      type="range" min={100} max={10000} value={Math.round(Math.pow(tempTimer, 0.66)*100)} className={`${styles["range"]}`}
+                      type="range" min={100} max={3300} value={Math.round(Math.pow(tempTimer, 0.66)*100)} className={`${styles["range"]}`}
                       onChange={(e) => { setTempTimer(Math.ceil(Math.pow(parseInt(e.target.value) / 100, 1/0.66))); }}
                     />
                     <span className={`${styles["text-nowrap"]}`}>{tempTimer} second{tempTimer === 1 ? "" : "s"}</span>
@@ -551,11 +555,11 @@ export const Host = (
           <div className={`${styles["modal-box"]} ${styles["flex"]} ${styles["flex-col"]} ${styles["gap-2"]}`}>
             <h3 className={`${styles["text-xl"]}`}>
               {
-                redClicks === greenClicks
+                winner === "tie"
                 ? (
                   <span className={`${styles["text-warning"]} ${styles["text-bold"]} ${styles["brightness-75"]}`}>Tie!</span>
                 ) : (
-                  redClicks > greenClicks
+                  winner === "red"
                   ? (
                     <><span className={`${styles["text-bold"]}`} style={{color: RED}}>Red</span> wins{"!"}</>
                   ) : (
