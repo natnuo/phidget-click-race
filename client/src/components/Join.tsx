@@ -45,6 +45,8 @@ export const Join = (
         const [usingKeyboard, toggleUsingKeyboard] = useReducer((state: boolean) => {
                 return !state;
         }, true);
+        const UNCLICKED_TRANSFORM = "scale(1)";
+        const CLICKED_TRANSFORM = "scale(0.9)";
         const [selectedColor, setSelectedColor] = useState<"green" | "red">("red");
         const redButtonRef = useRef<HTMLDivElement>(null);
         const greenButtonRef = useRef<HTMLDivElement>(null);
@@ -55,23 +57,23 @@ export const Join = (
         const listenForSpaceUpRed = useCallback((e: KeyboardEvent) => {
                 if (e.code === "Space" && redButtonRef.current) {
                         sendClick("red");
-                        redButtonRef.current.style.transform = "scale(1)";
+                        redButtonRef.current.style.transform = UNCLICKED_TRANSFORM;
                 }
         }, [sendClick]);
         const listenForSpaceDownRed = useCallback((e: KeyboardEvent) => {
                 if (e.code === "Space" && redButtonRef.current) {
-                        redButtonRef.current.style.transform = "scale(0.9)";
+                        redButtonRef.current.style.transform = CLICKED_TRANSFORM;
                 }
         }, []);
         const listenForSpaceUpGreen = useCallback((e: KeyboardEvent) => {  // can't just to one space listener bc then deleting doesn't work for weird reasons
                 if (e.code === "Space" && greenButtonRef.current) {
                         sendClick("green");
-                        greenButtonRef.current.style.transform = "scale(1)";
+                        greenButtonRef.current.style.transform = UNCLICKED_TRANSFORM;
                 }
         }, [sendClick]);
         const listenForSpaceDownGreen = useCallback((e: KeyboardEvent) => {
                 if (e.code === "Space" && greenButtonRef.current) {
-                        greenButtonRef.current.style.transform = "scale(0.9)";
+                        greenButtonRef.current.style.transform = CLICKED_TRANSFORM;
                 }
         }, []);
         const listenForGreenSwap = useCallback((e: KeyboardEvent) => {
@@ -109,6 +111,13 @@ export const Join = (
                 listenForSpaceDownGreen,
                 usingKeyboard
         ]);
+
+        const buttonOnMouseUp = useCallback((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+                e.currentTarget.style.transform = UNCLICKED_TRANSFORM;
+        }, [usingKeyboard]);
+        const buttonOnMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+                if (!usingKeyboard) e.currentTarget.style.transform = CLICKED_TRANSFORM;
+        }, [usingKeyboard]);
 
         return (
                 <div className={`
@@ -153,6 +162,9 @@ export const Join = (
                                                         ${usingKeyboard ? styles["cursor-not-allowed"] : styles["btn"]}
                                                         ${TW_PGT_BTN_GEN}
                                                 `}
+                                                onMouseDown={buttonOnMouseDown}
+                                                onMouseLeave={buttonOnMouseUp}
+                                                onMouseUp={buttonOnMouseUp}
                                                 onClick={
                                                         () => {
                                                                 if (!usingKeyboard)
@@ -174,6 +186,9 @@ export const Join = (
                                                         ${usingKeyboard ? styles["cursor-not-allowed"] : styles["btn"]}
                                                         ${TW_PGT_BTN_GEN}
                                                 `}
+                                                onMouseDown={buttonOnMouseDown}
+                                                onMouseLeave={buttonOnMouseUp}
+                                                onMouseUp={buttonOnMouseUp}
                                                 onClick={
                                                         () => {
                                                                 if (!usingKeyboard)
