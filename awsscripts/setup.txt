@@ -4,6 +4,8 @@ sudo apt install nodejs -y
 sudo apt install npm -y
 sudo setcap cap_net_bind_service=+ep `which node`
 
+# make A record of domain to ip
+
 sudo snap install --classic certbot
 sudo ln -s /snap/bin/certbot /usr/bin/certbot
 sudo certbot certonly --standalone
@@ -20,7 +22,11 @@ sudo chmod -R 750 /etc/letsencrypt/archive
 
 # git clone
 
-# NOW WRITE ENV. VARS. INTO ~/app.env, THEN
+# NOW WRITE ENV. VARS. INTO ~/app.env
+e.g.
+PRODUCTION="Y"
+SSL_CERT="/etc/letsencrypt/live/phidget1.ntao.dev/fullchain.pem"
+SSL_KEY="/etc/letsencrypt/live/phidget1.ntao.dev/privkey.pem"
 
 # NOW WRITE SERVICE TO /etc/systemd/system/myapp.service
 e.g.
