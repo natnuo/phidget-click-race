@@ -113,7 +113,13 @@ io.on("connection", (socket) => {
   const rawuser = socket.handshake.headers.user;
   assert(typeof rawuser === "string");
   
-  const user = JSON.parse(rawuser);
+  let user;
+  try {
+    user = JSON.parse(rawuser);
+  } catch (e) {
+    throw e;
+  }
+
   assert(isUser(user));
 
   ONLINE_USERS.add(user);
