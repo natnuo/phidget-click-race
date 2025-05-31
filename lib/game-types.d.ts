@@ -6,5 +6,7 @@ export type InitSetup = {
     time: number;
 } | {
     gameMode: "Neverending";
+} | {
+    gameMode: "None";
 };
 //# sourceMappingURL=game-types.d.ts.map

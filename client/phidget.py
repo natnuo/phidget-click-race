@@ -3,7 +3,7 @@ from Phidget22.Phidget import *
 from Phidget22.Devices.DigitalInput import *
 from Phidget22.Devices.DigitalOutput import *
 
-SERVER_ADDRESS = "https://phidget1.ntao.dev";
+SERVER_ADDRESS = "https://phidget1.ntao.dev"
 
 ports = {
     "redButton": 0,

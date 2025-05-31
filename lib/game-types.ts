@@ -6,4 +6,6 @@ export type InitSetup = {
   time: number,
 } | {
   gameMode: "Neverending",
+} | {
+  gameMode: "None",
 };

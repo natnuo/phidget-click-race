@@ -1,7 +1,6 @@
 import socketio
 
-SERVER_ADDRESS = "https://phidget1.ntao.dev";
-
+SERVER_ADDRESS = "https://phidget1.ntao.dev"
 
 with socketio.SimpleClient() as sio:
         sio.connect(SERVER_ADDRESS, headers={ "user": '{ "username": "", "email": "", "type": "clicker" }' })
